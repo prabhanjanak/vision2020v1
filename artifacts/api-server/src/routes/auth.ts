@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, participantsTable, systemUsersTable } from "@workspace/db";
 import { hashPassword, comparePassword, signToken } from "../lib/auth";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -58,11 +58,16 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     }
   }
 
-  // Try system user login
+  // Try system user login — match by empId OR mobile
   const [sysUser] = await db
     .select()
     .from(systemUsersTable)
-    .where(eq(systemUsersTable.mobile, mobile));
+    .where(
+      or(
+        eq(systemUsersTable.empId, mobile),
+        eq(systemUsersTable.mobile, mobile)
+      )
+    );
 
   if (!sysUser) {
     res.status(401).json({ error: "Invalid credentials" });
@@ -87,12 +92,16 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   });
   res.json({
     token,
+    mustChangePassword: sysUser.mustChangePassword,
     user: {
       id: sysUser.id,
       name: sysUser.name,
+      empId: sysUser.empId,
+      email: sysUser.email,
       mobile: sysUser.mobile,
       userType: sysUser.userType,
       assignedTrack: sysUser.assignedTrack,
+      mustChangePassword: sysUser.mustChangePassword,
       participantId: null,
     },
   });

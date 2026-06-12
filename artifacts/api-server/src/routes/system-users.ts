@@ -9,8 +9,6 @@ import {
   UpdateSystemUserBody,
   DeleteSystemUserParams,
 } from "@workspace/api-zod";
-import { z } from "zod/v4";
-
 const router = Router();
 
 function buildUser(u: typeof systemUsersTable.$inferSelect) {
@@ -140,16 +138,19 @@ router.post("/system-users/:id/reset-password", requireAuth(["admin"]), async (r
 // POST /auth/staff/change-password  — staff member changes their own password after force reset
 router.post("/auth/staff/change-password", requireAuth(), async (req, res): Promise<void> => {
   const user = req.user!;
-  const parsed = z.object({ currentPassword: z.string(), newPassword: z.string().min(6) }).safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
+  if (!currentPassword || !newPassword || newPassword.length < 6) {
+    res.status(400).json({ error: "currentPassword and newPassword (min 6 chars) are required" });
+    return;
+  }
 
   const [sysUser] = await db.select().from(systemUsersTable).where(eq(systemUsersTable.id, user.id));
   if (!sysUser) { res.status(404).json({ error: "User not found" }); return; }
 
-  const valid = await comparePassword(parsed.data.currentPassword, sysUser.passwordHash);
+  const valid = await comparePassword(currentPassword, sysUser.passwordHash);
   if (!valid) { res.status(401).json({ error: "Current password is incorrect" }); return; }
 
-  const passwordHash = await hashPassword(parsed.data.newPassword);
+  const passwordHash = await hashPassword(newPassword);
   await db.update(systemUsersTable).set({ passwordHash, mustChangePassword: false }).where(eq(systemUsersTable.id, user.id));
   res.json({ message: "Password changed successfully" });
 });

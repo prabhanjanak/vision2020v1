@@ -5,8 +5,9 @@ import { CurrentUser } from "@workspace/api-client-react/src/generated/api.schem
 
 interface AuthContextType {
   user: CurrentUser | null;
+  token: string | null;
   isLoading: boolean;
-  login: (token: string, user: CurrentUser) => void;
+  login: (token: string, user: CurrentUser, mustChangePassword?: boolean) => void;
   logout: () => void;
 }
 
@@ -30,9 +31,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [error]);
 
-  const login = (newToken: string, newUser: CurrentUser) => {
+  const login = (newToken: string, newUser: CurrentUser, mustChangePassword?: boolean) => {
     localStorage.setItem("vision2020_token", newToken);
     setToken(newToken);
+
+    if (mustChangePassword && newUser.userType !== "participant") {
+      setLocation("/staff/change-password");
+      return;
+    }
+
+    // Route by role
+    switch (newUser.userType) {
+      case "admin":
+        setLocation("/admin/dashboard");
+        break;
+      case "track_coordinator":
+        setLocation("/track/dashboard");
+        break;
+      case "food_coordinator":
+        setLocation("/food/dashboard");
+        break;
+      case "scientific_committee":
+        setLocation("/scientific/dashboard");
+        break;
+      default:
+        setLocation("/participant/dashboard");
+    }
   };
 
   const logout = () => {
@@ -42,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, isLoading: !!token && isMeLoading, login, logout }}>
+    <AuthContext.Provider value={{ user: user || null, token, isLoading: !!token && isMeLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

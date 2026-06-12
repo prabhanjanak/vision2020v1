@@ -17,6 +17,7 @@ export default function Login() {
   
   const { login: setAuthContext } = useAuth();
   const [, setLocation] = useLocation();
+  void setLocation; // suppress unused-var if navigation moved to login fn
   const { toast } = useToast();
   
   const loginMutation = useLogin();
@@ -27,18 +28,17 @@ export default function Login() {
       data: { mobile, password, userType }
     }, {
       onSuccess: (data) => {
-        setAuthContext(data.token, data.user);
-        toast({ title: "Login successful" });
-        if (data.user.userType === "participant") setLocation("/participant/dashboard");
-        else if (data.user.userType === "admin") setLocation("/admin/dashboard");
-        else if (data.user.userType === "track_coordinator") setLocation("/coordinator/dashboard");
-        else if (data.user.userType === "food_coordinator") setLocation("/admin/food-scanner");
-        else if (data.user.userType === "scientific_committee") setLocation("/scientific/submissions");
+        const mustChange = (data as unknown as { mustChangePassword?: boolean }).mustChangePassword ?? false;
+        setAuthContext(data.token, data.user, mustChange);
+        if (!mustChange) {
+          toast({ title: "Login successful" });
+        }
       },
-      onError: (err: any) => {
+      onError: (err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Please check your credentials and try again";
         toast({ 
           title: "Login failed", 
-          description: err.message || "Please check your credentials and try again",
+          description: msg,
           variant: "destructive"
         });
       }

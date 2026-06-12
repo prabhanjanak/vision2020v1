@@ -24,6 +24,7 @@ import AttendanceLogs from "@/pages/admin/attendance-logs";
 import SystemUsers from "@/pages/admin/system-users";
 import CoordinatorDashboard from "@/pages/coordinator/dashboard";
 import ScientificSubmissions from "@/pages/scientific/submissions";
+import StaffChangePassword from "@/pages/staff/change-password";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,8 @@ function Router() {
       <Route path="/scientific/submissions">
         {() => <AppLayout><ScientificSubmissions /></AppLayout>}
       </Route>
+      
+      <Route path="/staff/change-password" component={StaffChangePassword} />
       
       <Route path="/agenda/:registrationNumber" component={PublicAgenda} />
       

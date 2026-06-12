@@ -783,10 +783,13 @@ export const UpdateSubmissionSettingsResponse = zod.object({
  */
 export const ListSystemUsersResponseItem = zod.object({
   "id": zod.number(),
+  "empId": zod.string(),
   "name": zod.string(),
-  "mobile": zod.string(),
+  "email": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
   "userType": zod.enum(['admin', 'track_coordinator', 'food_coordinator', 'scientific_committee']),
   "assignedTrack": zod.string().nullish(),
+  "mustChangePassword": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 export const ListSystemUsersResponse = zod.array(ListSystemUsersResponseItem)
@@ -796,10 +799,12 @@ export const ListSystemUsersResponse = zod.array(ListSystemUsersResponseItem)
  * @summary Create a system user
  */
 export const CreateSystemUserBody = zod.object({
+  "empId": zod.string(),
   "name": zod.string(),
-  "mobile": zod.string(),
+  "email": zod.string().optional(),
+  "mobile": zod.string().optional(),
   "userType": zod.enum(['admin', 'track_coordinator', 'food_coordinator', 'scientific_committee']),
-  "password": zod.string(),
+  "password": zod.string().optional(),
   "assignedTrack": zod.string().optional()
 })
 
@@ -812,7 +817,9 @@ export const UpdateSystemUserParams = zod.object({
 })
 
 export const UpdateSystemUserBody = zod.object({
+  "empId": zod.string().optional(),
   "name": zod.string().optional(),
+  "email": zod.string().optional(),
   "mobile": zod.string().optional(),
   "userType": zod.enum(['admin', 'track_coordinator', 'food_coordinator', 'scientific_committee']).optional(),
   "assignedTrack": zod.string().optional(),
@@ -821,10 +828,13 @@ export const UpdateSystemUserBody = zod.object({
 
 export const UpdateSystemUserResponse = zod.object({
   "id": zod.number(),
+  "empId": zod.string(),
   "name": zod.string(),
-  "mobile": zod.string(),
+  "email": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
   "userType": zod.enum(['admin', 'track_coordinator', 'food_coordinator', 'scientific_committee']),
   "assignedTrack": zod.string().nullish(),
+  "mustChangePassword": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 

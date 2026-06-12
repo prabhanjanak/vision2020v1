@@ -1503,28 +1503,38 @@ components:
     # SYSTEM USER SCHEMAS
     SystemUser:
       type: object
-      required: [id, name, mobile, userType, createdAt]
+      required: [id, empId, name, userType, mustChangePassword, createdAt]
       properties:
         id:
           type: integer
+        empId:
+          type: string
         name:
           type: string
+        email:
+          type: ["string", "null"]
         mobile:
-          type: string
+          type: ["string", "null"]
         userType:
           type: string
           enum: [admin, track_coordinator, food_coordinator, scientific_committee]
         assignedTrack:
           type: ["string", "null"]
+        mustChangePassword:
+          type: boolean
         createdAt:
           type: string
           format: date-time
 
     SystemUserInput:
       type: object
-      required: [name, mobile, userType, password]
+      required: [empId, name, userType]
       properties:
+        empId:
+          type: string
         name:
+          type: string
+        email:
           type: string
         mobile:
           type: string
@@ -1533,13 +1543,18 @@ components:
           enum: [admin, track_coordinator, food_coordinator, scientific_committee]
         password:
           type: string
+          description: Defaults to Welcome@123 if omitted
         assignedTrack:
           type: string
 
     SystemUserUpdate:
       type: object
       properties:
+        empId:
+          type: string
         name:
+          type: string
+        email:
           type: string
         mobile:
           type: string

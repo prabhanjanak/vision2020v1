@@ -154,67 +154,187 @@ router.post(
     let skipped = 0;
     const errors: string[] = [];
 
+    // Support both the real Vision2020 Excel format and a simple generic format
+    const ROLE_COL = "Role (Chair/Co-Chair/Moderator/\r\nPanellist/Speaker)";
+    const isVision2020Format = rows.length > 0 && ROLE_COL in rows[0];
+
+    function mapRole(raw: string): string {
+      const r = (raw || "").trim().toLowerCase();
+      if (r === "poster") return "PosterPresenter";
+      if (r === "co-chair") return "CoChair";
+      if (r === "panelist" || r === "panellist") return "Panelist";
+      if (r === "speaker") return "Speaker";
+      if (r === "presenter") return "Presenter";
+      if (r === "moderator") return "Moderator";
+      if (r === "judge") return "Judge";
+      if (r === "chair") return "Chair";
+      if (r === "warp-up" || r === "wrap-up") return "Moderator";
+      return "Speaker";
+    }
+
+    function mapDay(day: string | number): string {
+      const d = Number(day);
+      if (d === 1) return "2026-07-10";
+      if (d === 2) return "2026-07-11";
+      if (d === 3) return "2026-07-12";
+      // If already a date string, pass through
+      if (typeof day === "string" && day.includes("-")) return day;
+      return "2026-07-10";
+    }
+
+    function mapTrack(t: string | number): string {
+      if (typeof t === "number") return `Track ${t}`;
+      return String(t || "").trim() || "General";
+    }
+
+    // Track mobile counter for auto-generation
+    const existingCount = await db.select({ id: participantsTable.id }).from(participantsTable);
+    let mobileCounter = existingCount.length + 1;
+    const participantKeyMap = new Map<string, number>(); // "name|institution" → participantId
+
     for (const row of rows) {
       try {
-        const regNum = String(row["Registration Number"] || row["registrationNumber"] || "").trim();
-        const name = String(row["Name"] || row["name"] || "").trim();
-        const email = String(row["Email"] || row["email"] || "").trim();
-        const mobile = String(row["Mobile Number"] || row["mobile"] || "").trim();
-        const institution = String(row["Institution"] || row["institution"] || "").trim();
-        const role = String(row["Role"] || row["role"] || "").trim();
-        const track = String(row["Track"] || row["track"] || "").trim();
-        const sessionName = String(row["Session"] || row["session"] || "").trim();
-        const hall = String(row["Hall"] || row["hall"] || "").trim();
-        const date = String(row["Date"] || row["date"] || "").trim();
-        const time = String(row["Time"] || row["time"] || "").trim();
-        const presentationTitle = String(row["Presentation Title"] || row["presentationTitle"] || "").trim();
+        let name: string, institution: string, mobile: string, email: string;
+        let regNum: string, role: string, track: string, sessionName: string;
+        let hall: string, date: string, time: string, presentationTitle: string;
 
-        if (!regNum || !name || !mobile) {
-          errors.push(`Row missing required fields: ${JSON.stringify(row)}`);
-          skipped++;
-          continue;
-        }
+        if (isVision2020Format) {
+          // Real Vision2020 Excel format
+          name = String(row["Name"] || "").trim();
+          institution = String(row["Hospital Name"] || "").trim();
+          mobile = String(row["Mobile Number"] || "").trim();
+          const rawRole = String(row[ROLE_COL] || "").trim();
+          const rawTrack = row["Track number"];
+          const rawDay = row["Day"];
 
-        // Upsert participant
-        const [existing] = await db
-          .select()
-          .from(participantsTable)
-          .where(eq(participantsTable.registrationNumber, regNum));
+          role = mapRole(rawRole);
+          track = mapTrack(rawTrack as string | number);
+          sessionName = String(row["Session name"] || "").trim();
+          hall = "";
+          date = mapDay(rawDay as string | number);
+          time = String(row["Time"] || "").trim();
+          presentationTitle = String(row["Tittle"] || "").trim();
 
-        let participantId: number;
-        if (existing) {
-          participantId = existing.id;
-        } else {
-          const [newP] = await db
-            .insert(participantsTable)
-            .values({ registrationNumber: regNum, name, email, mobile, institution })
-            .onConflictDoUpdate({
-              target: participantsTable.mobile,
-              set: { name, email, institution },
-            })
-            .returning();
-          participantId = newP.id;
-          await db.insert(activityLogsTable).values({
-            type: "registration",
-            message: `Imported: ${name} (${regNum})`,
-          });
-        }
+          // Registration number: use Poster/Paper No as suffix if present
+          const paperNo = row["Poster / Paper No"] || row["Sr. No"] || "";
+          regNum = String(row["Registration Number"] || row["registrationNumber"] || "").trim();
 
-        // Create assignment if role provided
-        if (role) {
+          if (!name) { skipped++; continue; }
+
+          // Group by name+institution — same person may appear multiple times
+          const key = `${name}|${institution}`;
+          let participantId = participantKeyMap.get(key);
+
+          if (participantId === undefined) {
+            // Check DB by name+institution (rough match)
+            const existing = await db
+              .select()
+              .from(participantsTable)
+              .where(eq(participantsTable.name, name));
+            const match = existing.find(p => p.institution === institution);
+
+            if (match) {
+              participantId = match.id;
+            } else {
+              // Auto-generate mobile and reg number if missing
+              if (!mobile) {
+                mobile = `98${String(mobileCounter + 10000000).slice(-8)}`;
+                mobileCounter++;
+              }
+              if (!regNum) {
+                const count = await db.select({ id: participantsTable.id }).from(participantsTable);
+                regNum = `V2020-${String(count.length + 1).padStart(5, "0")}`;
+              }
+              const emailBase = name.toLowerCase().replace(/[^a-z0-9]/g, ".").replace(/\.+/g, ".").replace(/^\.|\.$/, "");
+              email = `${emailBase}@conference.vision2020india.org`;
+
+              // Ensure mobile uniqueness
+              const mobileExists = await db.select({ id: participantsTable.id }).from(participantsTable).where(eq(participantsTable.mobile, mobile));
+              if (mobileExists.length > 0) {
+                mobile = `98${String(Date.now()).slice(-8)}`;
+              }
+
+              const [newP] = await db
+                .insert(participantsTable)
+                .values({ registrationNumber: regNum, name, email, mobile, institution: institution || "Unknown Institution" })
+                .returning();
+              participantId = newP.id;
+              await db.insert(activityLogsTable).values({
+                type: "registration",
+                message: `Imported: ${name} (${newP.registrationNumber})`,
+              });
+            }
+            participantKeyMap.set(key, participantId);
+          }
+
+          // Insert assignment
           await db.insert(assignmentsTable).values({
             participantId,
             role,
-            track: track || "General",
+            track,
             sessionName: sessionName || null,
-            hall: hall || null,
-            date: date || null,
+            hall: null,
+            date,
             time: time || null,
             presentationTitle: presentationTitle || null,
           });
-        }
+          imported++;
 
-        imported++;
+        } else {
+          // Generic/simple format
+          regNum = String(row["Registration Number"] || row["registrationNumber"] || "").trim();
+          name = String(row["Name"] || row["name"] || "").trim();
+          email = String(row["Email"] || row["email"] || "").trim();
+          mobile = String(row["Mobile Number"] || row["mobile"] || "").trim();
+          institution = String(row["Institution"] || row["institution"] || "").trim();
+          role = String(row["Role"] || row["role"] || "").trim();
+          track = String(row["Track"] || row["track"] || "").trim();
+          sessionName = String(row["Session"] || row["session"] || "").trim();
+          hall = String(row["Hall"] || row["hall"] || "").trim();
+          date = String(row["Date"] || row["date"] || "").trim();
+          time = String(row["Time"] || row["time"] || "").trim();
+          presentationTitle = String(row["Presentation Title"] || row["presentationTitle"] || "").trim();
+
+          if (!regNum || !name || !mobile) {
+            errors.push(`Row missing required fields (need Registration Number, Name, Mobile Number)`);
+            skipped++;
+            continue;
+          }
+
+          const [existing] = await db
+            .select()
+            .from(participantsTable)
+            .where(eq(participantsTable.registrationNumber, regNum));
+
+          let participantId: number;
+          if (existing) {
+            participantId = existing.id;
+          } else {
+            const [newP] = await db
+              .insert(participantsTable)
+              .values({ registrationNumber: regNum, name, email, mobile, institution })
+              .returning();
+            participantId = newP.id;
+            await db.insert(activityLogsTable).values({
+              type: "registration",
+              message: `Imported: ${name} (${regNum})`,
+            });
+          }
+
+          if (role) {
+            await db.insert(assignmentsTable).values({
+              participantId,
+              role,
+              track: track || "General",
+              sessionName: sessionName || null,
+              hall: hall || null,
+              date: date || null,
+              time: time || null,
+              presentationTitle: presentationTitle || null,
+            });
+          }
+          imported++;
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         errors.push(`Error processing row: ${msg}`);

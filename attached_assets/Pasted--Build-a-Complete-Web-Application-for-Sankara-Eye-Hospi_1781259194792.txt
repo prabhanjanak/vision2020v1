@@ -1,0 +1,533 @@
+# Build a Complete Web Application for Sankara Eye Hospital – Vision 2020 Conference 2026
+
+Create a production-ready, responsive, and professional conference management web application for **Sankara Eye Hospital – Vision 2020 Conference 2026**.
+
+Use:
+
+* React for frontend
+* Python for backend APIs
+* SQL database
+
+Do not ask unnecessary questions. Generate the complete project structure and implement all features.
+
+---
+
+# DESIGN REQUIREMENTS
+
+Create a clean and modern healthcare-themed UI.
+
+### Theme
+
+* Light mode only
+* Professional appearance
+* Proper spacing and alignment everywhere
+* Consistent typography across all pages
+* Responsive design for desktop, tablet and mobile
+
+### Colors
+
+Use Sankara-inspired colors:
+
+Primary Orange:
+#F58220
+
+Secondary Purple:
+#6F42C1
+
+Use soft gradients with white backgrounds.
+
+### Fonts
+
+Use clean professional fonts.
+
+Maintain:
+
+* Uniform margins
+* Equal padding
+* Proper card spacing
+* Consistent table styling
+* Professional dashboard appearance
+
+Avoid overlapping elements or broken layouts.
+
+---
+
+# USER TYPES
+
+1. Admin
+2. Participant
+3. Track Coordinator
+4. Food Coordinator
+5. Scientific Committee Viewer
+
+---
+
+# MASTER EXCEL IMPORT
+
+Admin uploads Excel containing:
+
+* Registration Number
+* Name
+* Email
+* Mobile Number
+* Institution
+* Role
+* Track
+* Session
+* Hall
+* Date
+* Time
+* Presentation Title
+
+Allow multiple records for the same person.
+
+One participant may have multiple roles.
+
+---
+
+# PARTICIPANT LOGIN
+
+Participants should not create accounts manually.
+
+Login using:
+
+* Registered mobile number
+
+After verification:
+
+* Create password
+* Forgot password support
+* Reset password support
+
+Participants should only access their own records.
+
+---
+
+# PARTICIPANT DASHBOARD
+
+Display:
+
+* Name
+* Registration Number
+* Institution
+* Mobile Number
+* Email
+
+Display all assigned roles.
+
+---
+
+# ROLE RULES
+
+## Speaker
+
+PPT upload mandatory.
+
+Allowed:
+
+PPTX only.
+
+Maximum size:
+
+15 MB
+
+---
+
+## Presenter
+
+PPT upload mandatory.
+
+Allowed:
+
+PPTX only.
+
+Maximum size:
+
+15 MB
+
+---
+
+## Poster Presenter
+
+Poster upload mandatory.
+
+Allowed:
+
+JPG only.
+
+Maximum size:
+
+15 MB
+
+---
+
+## Panelist
+
+No session timing required.
+
+No upload required.
+
+---
+
+## Moderator
+
+No session timing required.
+
+No upload required.
+
+---
+
+## Judge
+
+No session timing required.
+
+No upload required.
+
+---
+
+## Chair
+
+No session timing required.
+
+No upload required.
+
+---
+
+## Co-Chair
+
+No session timing required.
+
+No upload required.
+
+---
+
+For Chair, Co-Chair, Moderator, Judge, Panelist and Poster Presenter:
+
+Show only their role and track.
+
+Do not show presentation time or session schedule.
+
+These participants attend mainly on Day 1.
+
+---
+
+For Speaker and Presenter:
+
+Display:
+
+* Track
+* Session Name
+* Hall
+* Date
+* Time
+* Presentation Title
+
+---
+
+# FILE UPLOAD
+
+Allow file replacement before admin closes submissions.
+
+Participants can:
+
+* View uploaded file
+* Replace uploaded file
+* Download uploaded file
+
+Admin controls opening and closing of submissions.
+
+After closing:
+
+* Upload disabled
+* Files become read-only
+
+Automatically rename uploaded files:
+
+REG001_Arnab_Track1_Session3_V1.pptx
+
+REG001_Arnab_Track1_Session3_V2.pptx
+
+REG001_Arnab_Track1_Session3_POSTER_V1.jpg
+
+---
+
+# ADMIN DASHBOARD
+
+Admin has complete control.
+
+Allow:
+
+* Add participant
+* Edit participant
+* Delete participant
+* Modify any field
+* Change role
+* Change hall
+* Change session
+* Change track
+* Change presentation title
+* Replace uploaded files
+* Change timings
+* Add last-minute modifications
+
+Everything must be editable from the backend.
+
+No hardcoded values.
+
+---
+
+# QR CODE SYSTEM
+
+Generate three QR codes for every participant.
+
+---
+
+## QR 1 – Registration QR
+
+Contains:
+
+Registration Number
+
+Example:
+
+V2020-00542
+
+Purpose:
+
+* Attendance
+* Food coupon scanning
+
+Show:
+
+Preview button
+
+Download button
+
+Downloaded filename format:
+
+ArnabQR1.png
+
+---
+
+## QR 2 – General Agenda QR
+
+Contains:
+
+Common conference agenda PDF link.
+
+Same for everyone.
+
+Show:
+
+Preview button
+
+Download button
+
+Downloaded filename:
+
+ArnabQR2.png
+
+---
+
+## QR 3 – Personal Agenda QR
+
+Contains:
+
+Participant personal agenda page link.
+
+Example:
+
+/personal-agenda/V2020-00542
+
+Show:
+
+Preview button
+
+Download button
+
+Downloaded filename:
+
+ArnabQR3.png
+
+---
+
+# PERSONAL AGENDA PAGE
+
+When QR3 is scanned:
+
+Open participant-specific page.
+
+Display:
+
+Name
+
+Role
+
+Track
+
+Hall
+
+Date
+
+Time
+
+Presentation Title
+
+For multiple presentations:
+
+Display in clean table format.
+
+Sort chronologically.
+
+---
+
+# ATTENDANCE SYSTEM
+
+Use QR1.
+
+Food coordinators scan QR code.
+
+Store:
+
+* Participant Name
+* Registration Number
+* Date
+* Time
+* Attendance status
+
+Provide export to Excel.
+
+---
+
+# FOOD MANAGEMENT MODULE
+
+Separate page for food coordinators.
+
+Multiple coordinators may use simultaneously.
+
+Admin creates food sessions.
+
+Example:
+
+Breakfast
+Lunch
+Dinner
+
+Admin controls:
+
+* Start time
+* End time
+* Enable or disable food session
+
+During active period:
+
+Coordinator scans QR1.
+
+If already used:
+
+Show:
+
+"Food already collected"
+
+Otherwise:
+
+Show:
+
+"Food issued successfully"
+
+Store:
+
+* Name
+* Registration Number
+* Food Type
+* Date
+* Time
+* Coordinator Name
+
+Provide Excel export.
+
+---
+
+# REAL-TIME ADMIN DASHBOARD
+
+Display live statistics:
+
+* Total registrations
+* Attendance count
+* Breakfast count
+* Lunch count
+* Dinner count
+* PPT submissions received
+* Poster submissions received
+
+Auto refresh periodically.
+
+---
+
+# TRACK COORDINATOR PANEL
+
+Track coordinators only access assigned tracks.
+
+Can:
+
+* View participant list
+* Download files
+* Search participants
+* Filter by session
+
+---
+
+# SCIENTIFIC COMMITTEE PANEL
+
+Can view all submissions.
+
+Can:
+
+* Download presentations
+* Search participants
+* Filter by role
+* Filter by track
+
+Read-only access.
+
+---
+
+# TABLE DESIGN
+
+Use consistent tables.
+
+Proper alignment.
+
+Equal spacing.
+
+Responsive layout.
+
+Search and filters on every table.
+
+---
+
+# VALIDATION
+
+Prevent:
+
+* Wrong file types
+* Duplicate entries
+* Empty required fields
+
+Show professional error messages.
+
+---
+
+# CODE QUALITY
+
+Generate:
+
+* Organized folder structure
+* Reusable components
+* Clean APIs
+* Modular backend
+* Proper comments
+
+Avoid messy code.
+
+Ensure the entire application is production-ready and visually polished.
